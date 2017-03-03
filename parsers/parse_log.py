@@ -43,3 +43,29 @@ def parse_caffe(path, output_fields=['accuracy']):
                     test_log[-1]['loss'] = loss
 
     return train_log, test_log  
+
+if __name__ == '__main__':
+    import argparse
+    import json
+    import os
+
+    parser = argparse.ArgumentParser(description="Extracts caffe log info")
+    parser.add_argument("filename", type=str, help="log_pat")
+    parser.add_argument("--root_dir", type=str, default=None, help="If set \
+            parse all logs with a given filename inside the subfolders of the \
+            root dir")
+    args = parser.parse_args()
+
+    if args.root_dir is None:
+        train_log, test_log = parse_args(args.filename)
+        with open(args.filename + '.json', 'w') as output:
+            json.dump({'train':train_log,'test':test_log}, output)
+    else:
+        dirlist = os.listdir(args.root_dir)
+        for d in dirlist:
+            path = os.path.join(args.root_dir, d, args.filename)
+            if os.path.isfile(path):
+                train_log, test_log = parse_caffe(path)
+                with open(d + '.json', 'w') as output:
+                    json.dump({'train':train_log,'test':test_log}, output)
+                
