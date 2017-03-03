@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Author: prlz77 <pau.rodriguez at gmail.com>
 # Group: ISELAB@CVC-UAB
-# Date: 05/07/2016
+# Date: 03/03/2017
 """ Parses a Caffe Log """
 
 def parse_caffe(path, output_fields=['accuracy']):
@@ -10,6 +10,8 @@ def parse_caffe(path, output_fields=['accuracy']):
     :param path: ``string`` the log path.
     :param output_fields: ``list`` of ``string`` with the fields to 
     look for. Default is ['accuracy']
+
+    :return: train and test ordered lists.
     """
     with open(path, 'r') as infile:
         lines = infile.readlines()
