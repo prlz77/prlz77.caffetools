@@ -38,6 +38,8 @@ if __name__ == "__main__":
                 else:
                     curves[field].append(np.nan)
             test_iter.append(v['iter'])
+        if len(test_iter) == 0:
+            continue
         test_iter = np.array(test_iter, dtype=float)
         test_iter /= np.max(test_iter)
         for curve in curves:

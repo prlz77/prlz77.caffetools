@@ -54,7 +54,7 @@ if __name__ == '__main__':
     parser.add_argument("--root_dir", type=str, default=None, help="If set \
             parse all logs with a given filename inside the subfolders of the \
             root dir")
-    parser.add_argument("--output_fields", type=str, default=["accuracy"], 
+    parser.add_argument("--output_fields", type=str, nargs="+", default=["accuracy"], 
             help="Which data to look for")
     args = parser.parse_args()
 
