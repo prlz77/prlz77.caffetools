@@ -40,20 +40,23 @@ if __name__=='__main__':
     _, test_log = parse_caffe(args.log_path, [args.field])
     history = field2array(test_log, args.field)
 
-    while not is_plateau(history, args.plateau_size):
+    while psutil.pid_exists(args.pid) and not is_plateau(history, args.plateau_size):
         print "[%s] PID: %d, Log: %s" %(str(datetime.now()), args.pid, args.log_path)
         print "Current iter: %d, Current accuracy: %f" %(history.shape[0], history[-1])
         print "Best iter %d, Best accuracy: %f, not in plateau." %(np.argmax(history), np.max(history))
         time.sleep(args.time)
         _, test_log = parse_caffe(args.log_path, [args.field])
         history = field2array(test_log, args.field)
-    print "Plateau reached"
-    print "Best iter %d, Best accuracy: %f." %(np.argmax(history), np.max(history))
-    psutil.Process(args.pid).send_signal(signal.SIGINT)
-    print "Waiting process to exit"
-    while psutil.pid_exists(args.pid):
-        time.sleep(args.time)
-    print "Done."
+    if psutil.pid_exists(args.pid):
+        print "Plateau reached"
+        print "Best iter %d, Best accuracy: %f." %(np.argmax(history), np.max(history))
+        psutil.Process(args.pid).send_signal(signal.SIGINT)
+        print "Waiting process to exit"
+        while psutil.pid_exists(args.pid):
+            time.sleep(args.time)
+        print "Done."
+    else:
+        print "Process stopped before plateau."
         
 
 
