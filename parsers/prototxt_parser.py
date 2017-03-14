@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Author: prlz77 <pau.rodriguez at gmail.com>
+# Group: ISELAB@CVC-UAB
+# Date: 17/11/2016
+
 def read_eol(text, ind):
     buff = text[ind]
     counter = 0
