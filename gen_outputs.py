@@ -89,7 +89,7 @@ if args.swap:
 
 net.blobs['data'].reshape(args.batch_size, net.blobs['data'].data.shape[1], net.blobs['data'].data.shape[2], net.blobs['data'].data.shape[3])
 if args.verbose:
-    print "input shape: ", str([i for i in net.blobs['data'].shape])
+    print("input shape: ", str([i for i in net.blobs['data'].shape]))
 
 
 if args.flist is not None:
@@ -99,15 +99,16 @@ if args.flist is not None:
             with open(list_path, 'r') as infile:
                 self.flist = infile.readlines()
             self.root_path = root_path
-            self.imsize = cv2.imread(os.path.join(self.root_path, flist[0]))
-            self.n = len(flist)
+            self.n = len(self.flist)
             self.index = 0
             self.label_names = label_names
+            self.ids = []
         def get_next_image(self):
             labels = {}
             spline = self.flist[self.index].replace('\n', '').split(" ")
+            self.ids.append(spline[0])
             for idx, label_name in enumerate(self.label_names):
-                self.labels[label_name] = float(spline[1 + idx])
+                labels[label_name] = float(spline[1 + idx])
             img = imread(os.path.join(self.root_path, spline[0]).replace('\\', '/'))
             self.index += 1
             return img, labels
@@ -144,10 +145,11 @@ if args.center_crop is not None:
     ew = sw + args.center_crop
 else:
     sh = 0
-    eh = reader.imsize[0]
+    eh = -1
     sw = 0
-    ew = reader.imsize[1]
+    ew = -1
 
+dims = []
 for layer in args.layer:
     outputs.append(h5py.File(args.output + '_' + layer.replace('/','_') + '.h5', 'w'))
     dim = list(net.blobs[layer].data.shape[1:])
@@ -155,29 +157,32 @@ for layer in args.layer:
         dim = [np.array(dim).prod()]
     elif len(dim) < 3:
         dim = [np.array(dim).prod(), 1, 1]
+    dims.append(dim)
     outputs[-1].create_dataset('outputs', tuple([reader.n] + dim), dtype='float32')
     for label_name in args.label_names:
         outputs[-1].create_dataset(label_name, (reader.n,), dtype='float')
 
-for i in xrange(reader.n):
+for i in range(reader.n):
     img, label_dic = reader.get_next_image()
     for idx, label_name in enumerate(args.label_names):
         labels[label_name].append(label_dic[label_name])
     net.blobs['data'].data[((1+i) % args.batch_size)-1,...] = transformer.preprocess('data', img[sh:eh,sw:ew,:])
     if (i+1) % args.batch_size == 0 or i + 1 == reader.n:
-        out = net.forward()
+        out = net.forward(args.layer)
         bs = net.blobs['data'].data.shape[0]
         for index, layer in enumerate(args.layer):
-            outputs[index]['outputs'][(i-bs+1):i+1,...] = net.blobs[layer].data[...].reshape([-1] + dim)
+            outputs[index]['outputs'][(i-bs+1):i+1,...] = net.blobs[layer].data[...].reshape([-1] + dims[index])
+
             for label_name in args.label_names:
                 outputs[index][label_name][(i-bs+1):i+1] = labels[label_name][-bs:]
         next_batch_length = reader.n - (i+1)
         if bs == args.batch_size and next_batch_length > 0 and next_batch_length < args.batch_size:             
             net.blobs['data'].reshape(next_batch_length, net.blobs['data'].data.shape[1], net.blobs['data'].data.shape[2], net.blobs['data'].data.shape[3])
     if i % 1000 == 0:
-        print "Processing image ", i
+        print("Processing image ", i)
 
 for index, layer in enumerate(args.layer):
+    outputs[index]['ids'] = reader.ids
     if os.path.isfile(args.standarize_with):
         train = h5py.File(args.standarize_with, 'r')
         mean = train['mean'][...]
@@ -204,7 +209,7 @@ if args.standarize or os.path.isfile(args.standarize_with):
     outputs[index]['std'] = std
 
 if args.test:
-    print (outputs[-1]['outputs'][...].argmax(axis=1).flatten() == outputs[-1]['labels'][...].flatten()).mean()
+    print((outputs[-1]['outputs'][...].argmax(axis=1).flatten() == outputs[-1]['labels'][...].flatten()).mean())
 
 for index, layer in enumerate(args.layer):
     outputs[index].close()
